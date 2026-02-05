@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Aporia - Live Feed</title>
+    <style>
+        /* CONFIGURAÇÕES GERAIS */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: transparent; /* Importante para o Canva */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* MOLDURA DO MONITOR CYBERPUNK */
+        .cyber-monitor {
+            position: relative;
+            width: 95%;
+            max-width: 800px;
+            background: #1A1A1A;
+            border: 2px solid #8A2BE2; /* Roxo Neon */
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(138, 43, 226, 0.5), inset 0 0 15px rgba(0,0,0,0.9);
+            padding: 12px;
+        }
+
+        /* BARRA DE STATUS SUPERIOR */
+        .monitor-bar {
+            background: #2a2a2a;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            margin-bottom: 10px;
+            border-radius: 6px;
+        }
+
+        .monitor-bar span {
+            color: #FFFFFF;
+            font-size: 11px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            background-color: #ff0000;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            box-shadow: 0 0 8px #ff0000;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* ÁREA DO VÍDEO (RELAÇÃO 16:9) */
+        .screen-area {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        #yt-player {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            border: none;
+        }
+
+        /* CAMADA DE SCANLINES (EFEITO CRT) */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 3px;
+            z-index: 2;
+            pointer-events: none; /* Permite clicar no player */
+            opacity: 0.2;
+        }
+
+        /* RODAPÉ DO TERMINAL */
+        .monitor-footer {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            color: #8A2BE2; /* Roxo do Canal */
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        #video-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="cyber-monitor">
+    <div class="monitor-bar">
+        <span>LIVE FEED: REPOSITÓRIO APORIA</span>
+        <span><span class="status-dot"></span>SIGNAL_ACTIVE</span>
+    </div>
+
+    <div class="screen-area">
+        <iframe id="yt-player" src="" allowfullscreen></iframe>
+        <div class="scanlines"></div>
+    </div>
+
+    <div class="monitor-footer">
+        <span id="video-title">> INICIALIZANDO_SISTEMA...</span>
+        <span>V.2026_APORIA</span>
+    </div>
+</div>
+
+<script>
+    // ID do seu canal conforme a URL que você passou
+    const channelId = "UC__fEaOcDVpP8rDqPxpy9FA";
+    
+    // Vídeo reserva (caso o feed falhe por algum motivo de rede)
+    const fallbackId = "DAHAND7nnRQ"; 
+
+    async function fetchLatestVideo() {
+        const titleElement = document.getElementById('video-title');
+        const player = document.getElementById('yt-player');
+        
+        // Usamos rss2json para converter o XML do Youtube em JSON legível para o navegador
+        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            if (data.status === 'ok' && data.items.length > 0) {
+                const latestVideo = data.items[0];
+                // Extrai o ID do vídeo da URL (ex: watch?v=ID)
+                const videoId = latestVideo.link.split('v=')[1];
+                
+                player.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1`;
+                titleElement.innerText = `> EXECUTANDO: ${latestVideo.title.toUpperCase()}`;
+            } else {
+                throw new Error("Falha na resposta do Feed");
+            }
+        } catch (error) {
+            console.error("Erro ao carregar vídeo dinâmico:", error);
+            // Em caso de erro, carrega o fallback ou a playlist de uploads
+            player.src = `https://www.youtube.com/embed/videoseries?list=UU__fEaOcDVpP8rDqPxpy9FA`;
+            titleElement.innerText = "> MODO_SEGURANÇA: PLAYLIST_CARREGADA";
+        }
+    }
+
+    fetchLatestVideo();
+</script>
+
+</body>
+</html>
